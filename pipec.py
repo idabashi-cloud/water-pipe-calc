@@ -630,10 +630,10 @@ with st.sidebar:
     else:
         st.info("現在は「無料版」です。\n- 分岐点・末端は各4つまで\n- Excel/PDF出力不可\n- 流量線図作成不可")
         # Stripeへのリンクなどを貼る場合はここ
-        # st.link_button("Pro版を購入 (¥500/月)", "https://buy.stripe.com/...")
+        st.link_button("Pro版を購入 (¥500/月)", "https://buy.stripe.com/test_5kQ6oA7Zc07pbEKdpU5Ne00")
         input_pass = st.text_input("パスワードを入力", type="password", key="pro_pass_input")
         if st.button("Pro版を有効化"):
-            CORRECT_PASSWORD = "2026-PIPE-USER" 
+            CORRECT_PASSWORD = st.secrets["APP_PASSWORD"] 
             # セキュリティを高めるなら st.secrets["APP_PASSWORD"] を使用
             if input_pass == CORRECT_PASSWORD:
                 st.session_state["is_pro"] = True
