@@ -4,7 +4,7 @@ import sys
 import platform
 import io
 import matplotlib.pyplot as plt
-from matplotlib import font_manager
+import matplotlib.font_manager as fm
 from constants import FLOW_TABLE_FV, FLOW_TABLE_FT
 
 def setup_environment(file_path):
@@ -23,14 +23,33 @@ def setup_environment(file_path):
     return application_path
 
 def setup_fonts():
-    """グラフの日本語フォント設定"""
+    """グラフの日本語フォント設定（OSごとのフォント探索）"""
     system_name = platform.system()
+    
+    # 優先順位付きフォントリスト
     if system_name == "Windows":
-        plt.rcParams['font.family'] = 'Meiryo'
-    elif system_name == "Darwin":
-        plt.rcParams['font.family'] = 'Hiragino Sans'
+        fonts = ['Meiryo', 'Yu Gothic', 'MS Gothic', 'HGSGothicM', 'TakaoGothic']
+    elif system_name == "Darwin": # macOS
+        fonts = ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'AppleGothic']
+    else: # Linux / Others
+        fonts = ['Noto Sans CJK JP', 'IPAexGothic', 'IPAGothic', 'TakaoGothic', 'VL Gothic', 'WenQuanYi Zen Hei']
+    
+    # システム上の利用可能なフォントを探して適用
+    available_fonts = set(f.name for f in fm.fontManager.ttflist)
+    found_font = None
+    for f in fonts:
+        if f in available_fonts:
+            found_font = f
+            break
+    
+    if found_font:
+        plt.rcParams['font.family'] = found_font
     else:
+        # 見つからない場合はsans-serif (環境によっては文字化けの可能性あり)
         plt.rcParams['font.family'] = 'sans-serif'
+    
+    # マイナス記号の文字化け防止
+    plt.rcParams['axes.unicode_minus'] = False
 
 def interpolate_flow(lu, is_fv=False):
     """負荷単位から同時使用水量を補間計算"""
@@ -71,6 +90,8 @@ def get_flow_curve_image(current_lu, current_flow, is_fv):
     y_ft = [interpolate_flow(x, False) for x in x_vals]
     
     fig, ax = plt.subplots(figsize=(6, 4))
+    
+    # 線図のプロット
     ax.plot(x_vals, y_fv, label='曲線① (洗浄弁)', color='gray', linestyle='--', alpha=0.5, linewidth=1)
     ax.plot(x_vals, y_ft, label='曲線② (タンク)', color='gray', linestyle=':', alpha=0.5, linewidth=1)
     
@@ -82,6 +103,7 @@ def get_flow_curve_image(current_lu, current_flow, is_fv):
         ax.scatter([current_lu], [current_flow], color='red', s=80, zorder=5, label='現在値')
         ax.axvline(x=current_lu, color='red', linestyle='-', linewidth=0.5, alpha=0.7)
         ax.axhline(y=current_flow, color='red', linestyle='-', linewidth=0.5, alpha=0.7)
+        # テキスト表示
         ax.text(current_lu * 1.1, current_flow, f"{int(current_flow)} L/min", color='red', fontsize=9, va='bottom', fontweight='bold')
         ax.text(current_lu, current_flow * 0.75, f"{int(current_lu)} LU", color='red', fontsize=9, ha='left', fontweight='bold')
     
@@ -97,7 +119,8 @@ def get_flow_curve_image(current_lu, current_flow, is_fv):
     ax.legend(loc='upper left', fontsize='small')
     
     buf = io.BytesIO()
-    fig.savefig(buf, format='png')
+    # bbox_inches='tight' で文字切れを防ぐ
+    fig.savefig(buf, format='png', bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
     return buf
