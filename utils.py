@@ -23,30 +23,28 @@ def setup_environment(file_path):
     return application_path
 
 def setup_fonts():
-    """グラフの日本語フォント設定（OSごとのフォント探索）"""
+    """グラフの日本語フォント設定"""
     system_name = platform.system()
     
-    # 優先順位付きフォントリスト
+    # OSごとのフォント優先順位リスト
     if system_name == "Windows":
-        fonts = ['Meiryo', 'Yu Gothic', 'MS Gothic', 'HGSGothicM', 'TakaoGothic']
-    elif system_name == "Darwin": # macOS
-        fonts = ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'AppleGothic']
-    else: # Linux / Others
-        fonts = ['Noto Sans CJK JP', 'IPAexGothic', 'IPAGothic', 'TakaoGothic', 'VL Gothic', 'WenQuanYi Zen Hei']
-    
-    # システム上の利用可能なフォントを探して適用
-    available_fonts = set(f.name for f in fm.fontManager.ttflist)
-    found_font = None
-    for f in fonts:
-        if f in available_fonts:
-            found_font = f
-            break
-    
-    if found_font:
-        plt.rcParams['font.family'] = found_font
+        # Windows: Meiryo, MS Gothic, Yu Gothic
+        font_names = ['Meiryo', 'MS Gothic', 'Yu Gothic', 'HGSGothicM', 'TakaoGothic']
+    elif system_name == "Darwin": 
+        # macOS: Hiragino Sans
+        font_names = ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'AppleGothic']
     else:
-        # 見つからない場合はsans-serif (環境によっては文字化けの可能性あり)
-        plt.rcParams['font.family'] = 'sans-serif'
+        # Linux: Noto Sans CJK JP, IPA Gothic, VL Gothic
+        font_names = ['Noto Sans CJK JP', 'IPAGothic', 'IPAexGothic', 'TakaoGothic', 'VL Gothic', 'WenQuanYi Zen Hei']
+    
+    # フォントファミリーをsans-serifに設定し、sans-serifの優先順位リストを更新する
+    # これにより、Matplotlibがリスト内の利用可能なフォントを自動的に選択します
+    plt.rcParams['font.family'] = 'sans-serif'
+    # 既存のsans-serifリストの先頭に日本語フォントを追加
+    current_sans = plt.rcParams['font.sans-serif']
+    if isinstance(current_sans, str):
+        current_sans = [current_sans]
+    plt.rcParams['font.sans-serif'] = font_names + current_sans
     
     # マイナス記号の文字化け防止
     plt.rcParams['axes.unicode_minus'] = False
@@ -81,6 +79,9 @@ def get_display_size(size_a, pipe_type):
 
 def get_flow_curve_image(current_lu, current_flow, is_fv):
     """流量線図の画像を生成"""
+    # グラフ生成前にフォント設定を再適用して確実にする
+    setup_fonts()
+    
     x_vals = []
     v = 10
     while v <= 4000:
