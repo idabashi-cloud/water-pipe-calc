@@ -24,28 +24,50 @@ def setup_environment(file_path):
 
 def setup_fonts():
     """グラフの日本語フォント設定"""
-    system_name = platform.system()
+    # 利用可能なフォント一覧を取得
+    available_fonts = set(f.name for f in fm.fontManager.ttflist)
+
+    # 優先順位リスト（iPad/iOS対応のためHiragino系を上位に追加）
+    preferred_fonts = [
+        'Hiragino Sans',           # macOS / iOS
+        'Hiragino Kaku Gothic ProN',# macOS / iOS
+        'AppleGothic',             # macOS / iOS (Older)
+        'Meiryo',                  # Windows
+        'Yu Gothic',               # Windows
+        'MS Gothic',               # Windows
+        'Noto Sans CJK JP',        # Linux / Android / Others
+        'IPAexGothic',             # Linux
+        'IPAGothic',               # Linux
+        'TakaoGothic',             # Linux
+        'VL Gothic',               # Linux
+        'WenQuanYi Zen Hei',       # Linux
+    ]
     
-    # OSごとのフォント優先順位リスト
-    if system_name == "Windows":
-        # Windows: Meiryo, MS Gothic, Yu Gothic
-        font_names = ['Meiryo', 'MS Gothic', 'Yu Gothic', 'HGSGothicM', 'TakaoGothic']
-    elif system_name == "Darwin": 
-        # macOS: Hiragino Sans
-        font_names = ['Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'AppleGothic']
+    found_font = None
+    for font_name in preferred_fonts:
+        if font_name in available_fonts:
+            found_font = font_name
+            break
+            
+    # フォントが見つかった場合はそれを設定、なければsans-serif（システムデフォルト）
+    if found_font:
+        plt.rcParams['font.family'] = found_font
     else:
-        # Linux: Noto Sans CJK JP, IPA Gothic, VL Gothic
-        font_names = ['Noto Sans CJK JP', 'IPAGothic', 'IPAexGothic', 'TakaoGothic', 'VL Gothic', 'WenQuanYi Zen Hei']
-    
-    # フォントファミリーをsans-serifに設定し、sans-serifの優先順位リストを更新する
-    # これにより、Matplotlibがリスト内の利用可能なフォントを自動的に選択します
-    plt.rcParams['font.family'] = 'sans-serif'
-    # 既存のsans-serifリストの先頭に日本語フォントを追加
-    current_sans = plt.rcParams['font.sans-serif']
-    if isinstance(current_sans, str):
-        current_sans = [current_sans]
-    plt.rcParams['font.sans-serif'] = font_names + current_sans
-    
+        # 見つからない場合でも、sans-serifのリストに日本語フォントを追加してフォールバックを期待する
+        plt.rcParams['font.family'] = 'sans-serif'
+        current_sans = plt.rcParams['font.sans-serif']
+        if isinstance(current_sans, str):
+            current_sans = [current_sans]
+        # 重複を除きつつ優先リストを先頭に追加
+        new_sans = []
+        for f in preferred_fonts:
+            if f not in new_sans:
+                new_sans.append(f)
+        for f in current_sans:
+            if f not in new_sans:
+                new_sans.append(f)
+        plt.rcParams['font.sans-serif'] = new_sans
+
     # マイナス記号の文字化け防止
     plt.rcParams['axes.unicode_minus'] = False
 
