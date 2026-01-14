@@ -35,12 +35,14 @@ def setup_fonts():
         'Meiryo',                  # Windows
         'Yu Gothic',               # Windows
         'MS Gothic',               # Windows
-        'Noto Sans CJK JP',        # Linux / Android / Others
+        'Noto Sans CJK JP',        # Linux / Android / Others (Streamlit Cloud often has Noto Sans)
+        'Noto Sans JP',            # Linux / Android / Others
         'IPAexGothic',             # Linux
         'IPAGothic',               # Linux
         'TakaoGothic',             # Linux
         'VL Gothic',               # Linux
         'WenQuanYi Zen Hei',       # Linux
+        'JapanSan',                # Some Androids
     ]
     
     found_font = None
@@ -49,15 +51,18 @@ def setup_fonts():
             found_font = font_name
             break
             
-    # フォントが見つかった場合はそれを設定、なければsans-serif（システムデフォルト）
+    # フォントが見つかった場合はそれを設定
     if found_font:
         plt.rcParams['font.family'] = found_font
     else:
-        # 見つからない場合でも、sans-serifのリストに日本語フォントを追加してフォールバックを期待する
+        # 見つからない場合、sans-serifに設定し、fallbackリストに追加
+        # Streamlit Cloud等の環境では fc-list で日本語フォントが入っているか確認が必要だが
+        # ここではできる限りの候補を追加する
         plt.rcParams['font.family'] = 'sans-serif'
         current_sans = plt.rcParams['font.sans-serif']
         if isinstance(current_sans, str):
             current_sans = [current_sans]
+        
         # 重複を除きつつ優先リストを先頭に追加
         new_sans = []
         for f in preferred_fonts:
